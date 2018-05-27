@@ -1,0 +1,167 @@
+// This #include statement was automatically added by the Particle IDE.
+#include "Particle.h"
+
+SYSTEM_MODE(SEMI_AUTOMATIC);            // Particle.connect() must be called to run in this mode.
+SYSTEM_THREAD(ENABLED);                 // System background processing and network management run on separate thread.
+
+// This section tells the computer the name of all the variables used for determining connection.
+#define disconnectDelay 60000           // After ___ milliseconds of no connection, turn WiFi off.
+#define checkInterval 120000            // How often to check for WiFi once disconnected.
+unsigned int lastAttempt, lastDisconnect;
+bool connected = true;
+
+// This section tells the computer the name of all the variables used for determining PM 2.5.
+int SensorPin = D6;                     // Pin 6 is the pin that reads from the sensor.
+int REDled = D1;
+int GREENled = D2;
+int BLUEled = D3;
+int LEDpower = D0;                      // This pin will power the LED.
+int count = 1;                          // This variable is used to set the offline storage locations for PM25.
+unsigned long starttime;
+unsigned long sampletime_ms = 30000;    //Length of sampling time in milliseconds before it reports.
+unsigned long triggerOnP2;
+unsigned long triggerOffP2;
+unsigned long pulseLengthP2;
+unsigned long durationP2;
+boolean valP2 = HIGH;
+boolean triggerP2 = false;
+float ratioP2 = 0;                      // The ratioP2 is initially set to zero when the code begins.
+float PM25 = 0;                         // The PM25 is initially set to zero when the code begins.
+float brightness = 120;                 // For adjusting the the LED.  0 is off, 255 is full brightness.
+
+// The setup commands run one time when the device is initialized.
+void setup()
+    {
+    pinMode(REDled, OUTPUT);
+    pinMode(GREENled, OUTPUT);
+    pinMode(BLUEled, OUTPUT);
+    pinMode(LEDpower, OUTPUT);
+    pinMode(SensorPin,INPUT);           // This tells the program that pin 6 is an input pin.
+    starttime = millis();               // How many milliseconds since the initial sample time started.
+    //millis() is the chip timer that counts the milliseconds since the program started. 
+
+    Particle.connect();                 // Attempts to connect the particle's WiFi to the cloud.
+
+    analogWrite(LEDpower, brightness);  // Illuminates LED at pre-selected brightness.
+     
+    digitalWrite(REDled, LOW);          // Red LED on while waiting for the 2 minute warmup
+    digitalWrite(GREENled, HIGH);       // Green LED off.
+    digitalWrite(BLUEled, HIGH);        // Blue LED off.
+    delay(90000);                       // The sensor requires one minute to initialize, this is a delay.
+    }
+    
+// This section runs when the command checkConnection() is called.
+void checkConnection()
+    {
+    if (Particle.connected() == false && millis() - lastDisconnect >= disconnectDelay)
+        {
+            lastDisconnect = millis();
+            WiFi.off();
+            connected = false;
+        }
+
+    if (millis() - lastAttempt >= checkInterval)
+        {
+            WiFi.on();
+            Particle.connect();
+            lastAttempt = millis();
+        }
+
+    if (millis() - lastAttempt >= disconnectDelay)
+        {
+            connected = Particle.connected();
+        }
+    }
+
+// This section loops forever.
+void loop()
+    {
+    checkConnection();
+    
+    // Sensor reading code written by Matthew Schroyer, MentalMunition.com
+    valP2 = digitalRead(SensorPin);         // Listens to Pin 6. It has two options "high" or "low".
+ 
+    if(valP2 == LOW && triggerP2 == false)
+        {
+            triggerP2 = true;
+            triggerOnP2 = micros();         // micros() measures like millis(), except in microseconds.
+        }
+ 
+    if (valP2 == HIGH && triggerP2 == true)
+        {
+            triggerOffP2 = micros();
+            pulseLengthP2 = triggerOffP2 - triggerOnP2;
+            durationP2 = durationP2 + pulseLengthP2;
+            triggerP2 = false;
+        }
+
+    if ((millis() - starttime) > sampletime_ms)             // Checks sample for pre-selected sample time.
+        {    
+        ratioP2 = durationP2/(sampletime_ms*10.0);          // Percent of time this pin was triggered during sampling. 
+
+        PM25= ratioP2 * ratioP2 * .1809 + 3.8987 * ratioP2; // +2.5003; //This is the calibration between the ratio and PM25.
+
+        // This section controls what color the LED is at on different PM25 levels. HIGH = off  LOW = on.
+        if (PM25 < 10)                      // Green
+            {
+            digitalWrite(REDled, HIGH);
+            digitalWrite(GREENled, LOW);
+            digitalWrite(BLUEled, HIGH);
+            }
+        if (PM25 < 20 && PM25 > 10)         // Cyan
+            {
+            digitalWrite(REDled, HIGH);
+            digitalWrite(GREENled, LOW);
+            digitalWrite(BLUEled, LOW);
+            }
+        if (PM25 < 30 && PM25 > 20)         // Blue
+            {
+            digitalWrite(REDled, HIGH);
+            digitalWrite(GREENled, HIGH);
+            digitalWrite(BLUEled, LOW);
+            }
+        if (PM25 < 40 && PM25 > 30)         // Magenta
+            {
+            digitalWrite(REDled, LOW);
+            digitalWrite(GREENled, HIGH);
+            digitalWrite(BLUEled, LOW);
+            }
+        if (PM25 < 100 && PM25 > 40)        // Red
+            {
+            digitalWrite(REDled, LOW);
+            digitalWrite(GREENled, HIGH);
+            digitalWrite(BLUEled, HIGH);
+            }
+        if (PM25 > 100)                     // White
+            {
+            digitalWrite(REDled, LOW);
+            digitalWrite(GREENled, LOW);
+            digitalWrite(BLUEled, LOW);
+            }
+
+        // This section determines whether to store the data in onboard ROM or send to cloud based on connection.
+        if (Particle.connected() == false)  // If the particle is not connected, this section runs.
+            {
+            EEPROM.put(count, PM25);        // EEPROM is onboard memory, the Photon has 2048 bytes of EEPROM.
+            count = (count + 10);           // Changes the starting location of next storage + 10 bytes.
+            }
+        else
+            {
+            if (count > 1);                             // This section runs if data has been stored in EEPROM.
+                {
+                for (int i = 1; count > i; i = i + 10)  // (Initial value, conditional statement, reoccuring math)
+                    {
+                    String data = String(EEPROM.get(i, PM25));                  // EEPROM stored values are retrieved.
+                    Particle.publish("AtmoVision01a-to-PHP", data, PRIVATE);    // Runs Webhook indicated.
+                    }
+                count = 1;                  // Resets storage location to the first byte after all EEPROM sent.
+                EEPROM.clear();             // Clears the EEPROM data.
+                }
+            String data = String(PM25);     // PM 2.5 data must be converted to a string to be sent to webhook.
+            Particle.publish("AtmoVision01a-to-PHP", data, PRIVATE);            // Runs the Webhook indicated.
+            }
+            
+        durationP2 = 0;                     // Low pulse occupance is reset to zero.
+        starttime = millis();               // Sample start time marker is set to current time.
+        }
+    }
