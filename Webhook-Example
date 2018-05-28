@@ -1,0 +1,7 @@
+{
+    "event": "AtmoVision-to-PHP",
+    "url": "http://atmovision.com/phpscriptgoeshere.php",
+    "requestType": "POST",
+    "noDefaults": false,
+    "rejectUnauthorized": false
+}
