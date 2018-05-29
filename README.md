@@ -30,7 +30,16 @@ Step 1: Raspberry Pi Basic Setup
     * Install VNC Viewer on any computer you would like to log-in to the raspberry pi from.
       + When it is time to login, the default username and password on your pi is user: "pi" password "raspberry".
         - Awesome! Now, we have the capability for remote access!
-        
+
+  ::: CHANGE THE DEFAULT USERNAMES AND PASSWORDS :::
+  - From the terminal, use the command "sudo passwd root" to change the root user password.
+    * Change the password to whatever you would like.
+    * Click the Raspberry at the top-right corner, go to "Shut Down", then select "Logout".
+      + If you are logged in remotely, this will not log you off.
+    * Change the user from "pi" to "Other...".
+    * Login with the username: "root" and the password that you set.
+  
+
 Step 2: The Apache Web Server
   - From the terminal, run the command "sudo apt-get update".
   - Run the command sudo apt-get install apache2 -y
