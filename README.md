@@ -45,4 +45,7 @@ Step 2: The Apache Web Server
   - Run the command sudo apt-get install apache2 -y
     * Great! Now, we have a web server.  From your raspberry pi, you can go to http://localhost/ to access your website!
 
-Step 3: 
+Step 3: Install PostGRE SQL instructions.
+
+Step 4: Install PHP
+  - From the terminal run the command "sudo apt install php7.0 php7.0-pgsql
