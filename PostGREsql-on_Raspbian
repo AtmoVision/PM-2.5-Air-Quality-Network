@@ -1,0 +1,23 @@
+:: INSTALL POSTGRESQL ::
+:: From the Terminal ::
+1.  sudo apt update && sudo apt upgrade
+2.  sudo apt install postgresql libpq-dev postgresql-client postgresql-client-common -y
+3.  sudo su postgres
+4.  createuser pi -P --interactive
+    Creates a user with the same username as used for Pi.
+5.  psql
+6.  create database atmovision;
+7.  Ctrl + D, Ctrl + D
+8.  sudo apt install pgadmin3
+9.  sudo nano /etc/postgresql/9.6/main/postgresql.conf
+    Uncomment "listen_addresses" line and change 'localhost' to '*'
+    Ctrl + X
+    y
+    Enter
+10. sudo nano /etc/postgresql/9.6/main/pg_hba.conf
+    change 127.0.0.1/32 to 0.0.0.0/0 for IPv4
+    change ::1/128 to ::/0 for IPv6
+    Ctrl + X
+    y
+    Enter
+11. sudo service postgresql restart
