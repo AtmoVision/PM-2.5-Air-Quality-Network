@@ -1,0 +1,24 @@
+<?php
+
+$hostname = "localhost";
+$username = "USERNAMEGOESHERE";
+$password = "PASSWORDGOESHERE";
+$db = "DATABASENAMEGOESHERE";
+
+$dbconnect=pg_connect($hostname,$username,$password,$db);
+
+if ($dbconnect->connect_error) {
+  die("Database connection failed: " . $dbconnect->connect_error);
+}
+  $data = $_POST['data'];
+  $coreid = $_POST['coreid'];
+  $published_at = $_POST['published_at'];
+
+$query = "INSERT INTO tablenamegoeshere VALUES (data, coreid, published_at)";
+
+if (!pg_query($dbconnect, $query)) {
+        die('An error occurred.');
+    } else {
+      echo "Success!";
+    }
+?>
