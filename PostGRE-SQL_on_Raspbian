@@ -21,3 +21,4 @@
     y
     Enter
 11. sudo service postgresql restart
+12. Install PGAdmin4 on the computer you would like to remotely connect from and point it to your new server.
