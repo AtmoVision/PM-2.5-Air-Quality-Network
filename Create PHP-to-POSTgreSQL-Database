@@ -1,24 +1,34 @@
 <?php
 
 $hostname = "localhost";
-$username = "USERNAMEGOESHERE";
-$password = "PASSWORDGOESHERE";
-$db = "DATABASENAMEGOESHERE";
+$username = "YourUsername";
+$password = "YourPassword";
+$db = "Yourdatabase";
 
-$dbconnect=pg_connect($hostname,$username,$password,$db);
+$dbconn = pg_connect("host=$hostname dbname=$db user=$username password=$password");
+
+if (!$dbconn) {
+  echo "A connection error occured.\n";
+    } else {
+      echo "Successfully connected!\n";
+    }
 
 if ($dbconnect->connect_error) {
   die("Database connection failed: " . $dbconnect->connect_error);
 }
+
   $data = $_POST['data'];
   $coreid = $_POST['coreid'];
   $published_at = $_POST['published_at'];
 
-$query = "INSERT INTO tablenamegoeshere VALUES (data, coreid, published_at)";
+$query = "INSERT INTO txstate (data, coreid, published_at) VALUES ('$data', '$coreid', '$published_at')";
 
-if (!pg_query($dbconnect, $query)) {
-        die('An error occurred.');
+$result = pg_query($dbconn, $query);
+
+if (!$result) {
+        die('An error occurred during query.');
     } else {
-      echo "Success!";
+      echo "Successfully sent data!";
     }
+
 ?>
